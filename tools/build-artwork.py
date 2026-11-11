@@ -10,7 +10,8 @@ Two constraints drive every decision here:
 
 2. SIZE. GitHub renders README images at roughly 860-900px in the content column,
    so a 1160px canvas shrinks every font by ~25% and small text becomes unreadable.
-   All artwork is therefore authored at 900px — one canvas pixel is one screen pixel.
+   All artwork is therefore authored at 880px. Matching the render width exactly also
+   avoids fractional resampling, which is what smears thin text strokes into mush.
 
 Outputs (dark + light variants):
   assets/hero-{dark,light}.svg    name, role, accent, contact pills
@@ -74,7 +75,14 @@ def _font(path):
     return _cache[path]
 
 
-def _round_path(d: str, nd: int = 0) -> str:
+def _round_path(d: str, nd: int = 2) -> str:
+    """Trim coordinate precision without destroying curve data.
+
+    nd=0 looks like a harmless size win, but type at 14-21px has curves finer
+    than one pixel: rounding control points to whole units collapses thousands
+    of curves into flat segments and the glyphs render visibly smudged. Two
+    decimals costs ~40 KB gzipped and keeps the outlines intact.
+    """
     def fmt(m):
         v = round(float(m.group()), nd)
         return f"{v:g}" if v != int(v) else str(int(v))
@@ -143,6 +151,21 @@ def text_at_top(text, path, size, x, top, track=0.0, fill="currentColor"):
     return markup, ink_bottom
 
 
+def wrap(text, path, size, max_w, track=0.0):
+    """Greedy word wrap against measured width — no manual line breaks to get wrong."""
+    lines, line = [], ""
+    for word in text.split():
+        trial = f"{line} {word}".strip()
+        if line and text_width(trial, path, size, track) > max_w:
+            lines.append(line)
+            line = word
+        else:
+            line = trial
+    if line:
+        lines.append(line)
+    return lines
+
+
 def fit(text, path, target_w, track=0.0, start=200):
     size = start
     while size > 6 and text_width(text, path, size, track * size) > target_w:
@@ -190,7 +213,7 @@ def defs(t, uid):
 
 
 # ================================================================ HERO
-HERO_W, HERO_H = 900, 348
+HERO_W, HERO_H = 880, 348
 
 
 def hero(theme):
@@ -232,7 +255,7 @@ def hero(theme):
         if slug != stack[-1][0]:
             parts.append(f'<circle cx="{x - 14:.1f}" cy="{stack_y - 7}" r="2" fill="{t["dim"]}"/>')
 
-    parts.append(text_paths("5 years building product UIs for 5K–50K users", INTER[500], 14, P, stack_y + 36, 0.2, t["muted"])[0])
+    parts.append(text_paths("5 years building product UIs for 5K–50K users", INTER[500], 15, P, stack_y + 36, 0.2, t["muted"])[0])
 
     # contact pills
     pills = [("github", "GitHub", "it-is-amit"), ("linkedin", "LinkedIn", "amit-verma"),
@@ -260,7 +283,7 @@ def hero(theme):
 
 # ================================================================ BENTO
 PAD, GUT = 10, 14
-BENTO_W = 900
+BENTO_W = 880
 INNER = BENTO_W - PAD * 2
 
 
@@ -269,7 +292,7 @@ def card(x, y, w, h, t, r=18, fill=None):
             f'fill="{fill or t["tile"]}" stroke="{t["stroke"]}" stroke-width="1.25"/>')
 
 
-def label(text, x, y, t, color=None, size=12, track=3.2):
+def label(text, x, y, t, color=None, size=13, track=3.0):
     return text_paths(text, INTER[600], size, x, y, track, color or t["dim"])[0]
 
 
@@ -322,18 +345,18 @@ def bento(theme):
     # ------------------------------------------------ 02 selected work
     parts.append(label("02 — SELECTED WORK", PAD, WORK_Y - 18, t))
     note = "CLIENT PROJECTS · NAMES WITHHELD"
-    nw = text_width(note, INTER[600], 11, 2.6)
-    parts.append(label(note, BENTO_W - PAD - nw, WORK_Y - 18, t, size=11, track=2.6))
+    nw = text_width(note, INTER[600], 12, 2.4)
+    parts.append(label(note, BENTO_W - PAD - nw, WORK_Y - 18, t, size=12, track=2.4))
 
     projects = [
         ("Fleet management dashboard",
-         ["Live vehicle status, reporting and", "role-based access across 45+ screens."],
+         "Live vehicle status, reporting and role-based access across 45+ screens.",
          "50K users", ["tanstack", "typescript", "firebase"]),
         ("School site + admin panel",
-         ["Public site plus a CMS for exams,", "results, admissions and achievements."],
+         "Public site plus a CMS for exams, results, admissions and achievements.",
          "30K users", ["nextdotjs", "typescript"]),
         ("Industrial monitoring platform",
-         ["Billing, inventory and plant ops for", "wastewater treatment sites."],
+         "Billing, inventory and plant ops for wastewater treatment sites.",
          "In production", ["react", "postgresql"]),
     ]
 
@@ -350,22 +373,13 @@ def bento(theme):
 
         parts.append(text_paths(f"0{i+1}", INTER[600], 12, cx + 20, WORK_Y + 37, 1.2, t["dim"])[0])
 
-        # title, wrapped by hand onto two lines at a readable size
-        words, line, lines = name.split(), "", []
-        for wd in words:
-            trial = f"{line} {wd}".strip()
-            if text_width(trial, INTER[600], 21, -0.2) > cw - 40:
-                lines.append(line)
-                line = wd
-            else:
-                line = trial
-        lines.append(line)
+        lines = wrap(name, INTER[600], 21, cw - 40, -0.2)
         for j, ln in enumerate(lines):
             parts.append(text_paths(ln, INTER[600], 21, cx + 20, WORK_Y + 84 + j * 26, -0.2, t["ink"])[0])
 
-        dy = WORK_Y + 84 + len(lines) * 26 + 14
-        for j, ln in enumerate(desc):
-            parts.append(text_paths(ln, INTER[500], 14, cx + 20, dy + j * 21, 0.1, t["muted"])[0])
+        dy = WORK_Y + 84 + len(lines) * 26 + 16
+        for j, ln in enumerate(wrap(desc, INTER[500], 15, cw - 40, 0.1)):
+            parts.append(text_paths(ln, INTER[500], 15, cx + 20, dy + j * 23, 0.1, t["muted"])[0])
 
         # mini stack icons along the bottom
         ix = cx + 20
