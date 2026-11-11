@@ -35,13 +35,13 @@ INTER = {w: FONTS / f"inter-latin-{w}-normal.ttf" for w in (500, 600, 700)}
 THEMES = {
     "dark": dict(
         bg="#0B0D11", tile="#12161D", tile_hi="#171C25", stroke="#232A35",
-        ink="#F2F5F9", muted="#8B949E", dim="#5A646F", accent="#FF6A2B",
-        accent2="#FFB067", paper="#0B0D11",
+        ink="#F2F5F9", ink2="#C9D1D9", muted="#8B949E", dim="#5A646F",
+        chip="#181E27", accent="#FF6A2B", accent2="#FFB067", paper="#0B0D11",
     ),
     "light": dict(
         bg="#FAF7F3", tile="#FFFFFF", tile_hi="#F4EFE8", stroke="#E4DDD3",
-        ink="#101318", muted="#6B655C", dim="#8A8378", accent="#E8501A",
-        accent2="#FF9448", paper="#FAF7F3",
+        ink="#101318", ink2="#3A3630", muted="#6B655C", dim="#8A8378",
+        chip="#F7F3ED", accent="#E8501A", accent2="#FF9448", paper="#FAF7F3",
     ),
 }
 
@@ -218,41 +218,40 @@ def hero(theme: str) -> str:
 
 
 # ================================================================ BENTO
-PAD = 44            # outer padding
-GUT = 16            # gutter
-COLS = 4
-BENTO_W = 1200
+# Deliberately roomy: three tiles, large type, generous padding. The earlier
+# 4-tile + 6-card grid read as congested at GitHub's ~860px render width.
+PAD = 52
+GUT = 20
+BENTO_W = 1160
 INNER = BENTO_W - PAD * 2
-COL_W = (INNER - GUT * (COLS - 1)) / COLS
+COL = (INNER - GUT * 2) / 3
 
-HEADER_H = 140
-ROW1_Y = HEADER_H
-ROW1_H = 252
-ROW2_Y = ROW1_Y + ROW1_H + GUT
-CARD_H, CARD_GAP = 86, 14
-ROW2_H = 62 + CARD_H * 2 + CARD_GAP + 26
-BENTO_H = int(ROW2_Y + ROW2_H + PAD)
+TOP_Y = 92
+TOP_H = 286
+WORK_LABEL_Y = TOP_Y + TOP_H + 58
+WORK_Y = WORK_LABEL_Y + 26
+WORK_H = 214
+BENTO_H = int(WORK_Y + WORK_H + PAD)
 
 
-def tile(x, y, w, h, t, r=16, fill=None, stroke=True):
+def card(x, y, w, h, t, r=18, fill=None):
     f = fill or t["tile"]
-    s = f' stroke="{t["stroke"]}" stroke-width="1.25"' if stroke else ""
-    return f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{r}" fill="{f}"{s}/>'
+    return (f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{r}" '
+            f'fill="{f}" stroke="{t["stroke"]}" stroke-width="1.25"/>')
 
 
-def chip(x, y, label, t, size=13):
-    """Outlined pill with label; returns (markup, width)."""
-    tw = text_width(label, INTER[600], size, 0.5)
-    w, h, padx = tw + 26, 27, 13
+def label(text, x, y, t, color=None, size=13, track=3.4):
+    return text_paths(text, INTER[600], size, x, y, track, color or t["dim"])
+
+
+def chip(x, y, lbl, t, size=14):
+    tw = text_width(lbl, INTER[500], size, 0.4)
+    pad, h = 15, 32
+    w = tw + pad * 2
     box = (f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h}" rx="{h/2:.1f}" '
-           f'fill="none" stroke="{t["stroke"]}" stroke-width="1.2"/>')
-    tx, _ = text_paths(label, INTER[600], size, x + padx, y + 18, 0.5, t["muted"])
+           f'fill="{t["chip"]}" stroke="{t["stroke"]}" stroke-width="1"/>')
+    tx, _ = text_paths(lbl, INTER[500], size, x + pad, y + 21, 0.4, t["ink2"])
     return box + tx, w
-
-
-def micro_label(text, x, y, t, color=None, size=12, track=3.6):
-    m, w = text_paths(text, INTER[600], size, x, y, track, color or t["dim"])
-    return m, w
 
 
 def bento(theme: str) -> str:
@@ -260,118 +259,80 @@ def bento(theme: str) -> str:
     uid = "d" if theme == "dark" else "l"
     a = t["accent"]
 
-    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {BENTO_W} {BENTO_H}" width="{BENTO_W}" height="{BENTO_H}" role="img" aria-label="Bento profile card for Amit Verma: about, tech stack, current work and selected anonymised client projects.">']
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {BENTO_W} {BENTO_H}" width="{BENTO_W}" height="{BENTO_H}" role="img" aria-label="Profile card for Amit Verma: about, tech stack and selected client work.">']
     parts.append(defs(t, uid))
     parts.append(f'<rect width="{BENTO_W}" height="{BENTO_H}" fill="{t["bg"]}"/>')
 
-    # ---------------------------------------------------------- header
-    eye, _ = micro_label("AMIT VERMA — GITHUB PROFILE", PAD, 40, t, size=12, track=4.2)
-    parts.append(eye)
-
-    avail_label = "OPEN TO SENIOR FRONTEND ROLES"
-    av_w = text_width(avail_label, INTER[600], 12, 3.4)
-    av, _ = text_paths(avail_label, INTER[600], 12, BENTO_W - PAD - av_w, 40, 3.4, t["muted"])
-    parts.append(av)
-    parts.append(
-        f'<circle cx="{BENTO_W - PAD - av_w - 16}" cy="36" r="4" fill="{a}">'
-        f'<animate attributeName="opacity" values="1;0.2;1" dur="2.8s" repeatCount="indefinite"/></circle>'
-    )
-
-    title_txt = "DESIGN-MINDED FRONTEND ENGINEER"
-    t_size = fit(ANTON, title_txt, INNER - 8, 0.012, start=92)
-    title, _ = text_paths(title_txt, ANTON, t_size, PAD, HEADER_H - 22, 0.012 * t_size, t["ink"])
-    parts.append(title)
-
-    # ---------------------------------------------------------- 01 about (2 cols)
-    left_w = COL_W * 2 + GUT
-    x, y = PAD, ROW1_Y
-    parts.append(tile(x, y, left_w, ROW1_H, t))
-    lb, _ = micro_label("01 — ABOUT", x + 26, y + 38, t)
-    parts.append(lb)
+    # ------------------------------------------------ 01 about (2 cols)
+    parts.append(label("01 — ABOUT", PAD, 62, t)[0])
+    x, y, w = PAD, TOP_Y, COL * 2 + GUT
+    parts.append(card(x, y, w, TOP_H, t))
 
     for i, line in enumerate(["I build interfaces that are", "designed, not just coded."]):
-        parts.append(text_paths(line, INTER[600], 22, x + 26, y + 82 + i * 29, 0.1, t["ink"])[0])
+        parts.append(text_paths(line, INTER[600], 30, x + 38, y + 66 + i * 39, -0.2, t["ink"])[0])
 
     for i, line in enumerate([
-        "5 years in frontend, 4+ of them in React, Next.js and TypeScript.",
-        "Started out in UI/UX, so hierarchy and motion still lead my work.",
+        "Five years in frontend, four of them in React, Next.js and",
+        "TypeScript. I started out as a UI/UX designer, so hierarchy,",
+        "motion and the pixel still lead every decision I make.",
     ]):
-        parts.append(text_paths(line, INTER[500], 14, x + 26, y + 152 + i * 23, 0.2, t["muted"])[0])
+        parts.append(text_paths(line, INTER[500], 16, x + 38, y + 140 + i * 26, 0.1, t["muted"])[0])
 
-    # stat strip
-    stats = [("5", "YEARS"), ("4+", "REACT / NEXT"), ("50K", "MAX USERS")]
-    sx = x + 26
-    base = y + ROW1_H - 24
-    for big, small in stats:
-        bm, bw = text_paths(big, ANTON, 30, sx, base, 0.5, a)
-        sm, sw = text_paths(small, INTER[600], 10, sx, base + 14, 1.6, t["dim"])
-        parts += [bm, sm]
-        sx += max(bw, sw) + 44
+    # stat row, hairline separated
+    stats = [("05", "YEARS"), ("4+", "REACT / NEXT"), ("50K", "MAX USERS")]
+    sw = (w - 76) / 3
+    base = y + TOP_H - 44
+    parts.append(f'<line x1="{x+38}" y1="{base-40}" x2="{x+w-38}" y2="{base-40}" stroke="{t["stroke"]}" stroke-width="1"/>')
+    for i, (big, small) in enumerate(stats):
+        sx = x + 38 + i * sw
+        parts.append(text_paths(big, INTER[700], 30, sx, base, -0.3, a)[0])
+        parts.append(text_paths(small, INTER[600], 11, sx, base + 20, 1.8, t["dim"])[0])
 
-    # ---------------------------------------------------------- 02 stack (2 cols)
-    rx = PAD + left_w + GUT
-    right_w = INNER - left_w - GUT
-    stack_h = 128
-    parts.append(tile(rx, ROW1_Y, right_w, stack_h, t))
-    lb, _ = micro_label("02 — STACK", rx + 24, ROW1_Y + 34, t)
-    parts.append(lb)
+    # ------------------------------------------------ 02 stack (1 col)
+    sx0 = PAD + (COL + GUT) * 2
+    parts.append(card(sx0, y, COL, TOP_H, t))
+    parts.append(label("02 — STACK", sx0 + 32, y + 50, t)[0])
 
-    rows = [
-        ["React.js", "Next.js", "TypeScript", "JavaScript"],
-        ["Tailwind CSS", "TanStack Query", "Redux Toolkit", "Framer Motion"],
-    ]
-    cy = ROW1_Y + 48
+    rows = [["React.js", "Next.js"], ["TypeScript", "JavaScript"],
+            ["Tailwind CSS", "TanStack"], ["Redux Toolkit", "Framer Motion"]]
+    cy = y + 72
     for row in rows:
-        cx = rx + 24
-        for label in row:
-            m, w = chip(cx, cy, label, t)
+        cx = sx0 + 32
+        for lbl in row:
+            m, cw = chip(cx, cy, lbl, t)
             parts.append(m)
-            cx += w + 8
-        cy += 35
+            cx += cw + 8
+        cy += 42
 
-    # ---------------------------------------------------------- 03 now
-    now_y = ROW1_Y + stack_h + GUT
-    now_h = ROW1_H - stack_h - GUT
-    parts.append(tile(rx, now_y, right_w, now_h, t))
-    lb, _ = micro_label("03 — NOW", rx + 24, now_y + 32, t)
-    parts.append(lb)
-    parts.append(text_paths("Leading frontend on product dashboards.", INTER[500], 15,
-                            rx + 24, now_y + 58, 0.2, t["muted"])[0])
-    parts.append(text_paths("Based in Rajasthan, India · remote-friendly.", INTER[500], 15,
-                            rx + 24, now_y + 82, 0.2, t["dim"])[0])
-
-    # ---------------------------------------------------------- 04 selected work
-    wx, wy, ww = PAD, ROW2_Y, INNER
-    parts.append(tile(wx, wy, ww, ROW2_H, t))
-    lb, _ = micro_label("04 — SELECTED WORK · CLIENT PROJECTS, ANONYMISED", wx + 26, wy + 38, t)
-    parts.append(lb)
+    # ------------------------------------------------ 03 selected work
+    parts.append(label("03 — SELECTED WORK", PAD, WORK_LABEL_Y, t)[0])
+    note = "CLIENT PROJECTS · NAMES WITHHELD"
+    nw = text_width(note, INTER[600], 11, 2.6)
+    parts.append(label(note, BENTO_W - PAD - nw, WORK_LABEL_Y, t, size=11, track=2.6)[0])
 
     projects = [
-        ("Fleet management dashboard", "TanStack Query · Firebase auth", "50K users"),
-        ("Industrial monitoring platform", "React · billing + inventory", "in production"),
-        ("School site + admin panel", "Next.js · SEO · admin CMS", "30K users"),
-        ("E-commerce storefront", "Next.js · SSR/SSG · responsive", "5K+ users"),
-        ("Social platform", "reusable component architecture", "5K users"),
-        ("AI astrology platform", "UI/UX overhaul + frontend", "5K users"),
+        ("Fleet management dashboard",
+         ["Operations dashboard for a fleet: live", "vehicle status, reporting, access control."],
+         "TanStack Query · Firebase", "50K users"),
+        ("School site + admin panel",
+         ["Public site plus an admin CMS for exams,", "results, admissions and achievements."],
+         "Next.js · SEO", "30K users"),
+        ("Industrial monitoring platform",
+         ["Billing, inventory and plant management", "for wastewater treatment sites."],
+         "React · REST APIs", "In production"),
     ]
 
-    cols = 3
-    card_w = (ww - 52 - CARD_GAP * (cols - 1)) / cols
-    cy0 = wy + 58
-    for i, (name, meta, scale) in enumerate(projects):
-        r, c = divmod(i, cols)
-        cx = wx + 26 + c * (card_w + CARD_GAP)
-        cy = cy0 + r * (CARD_H + CARD_GAP)
-        parts.append(tile(cx, cy, card_w, CARD_H, t, r=12, fill=t["tile_hi"], stroke=True))
-        idx, _ = text_paths(f"0{i+1}", INTER[600], 10, cx + 16, cy + 24, 1.2, a)
-        parts.append(idx)
-        nm, _ = text_paths(name, INTER[600], 15, cx + 16, cy + 48, 0, t["ink"])
-        parts.append(nm)
-        mt, _ = text_paths(meta, INTER[500], 11, cx + 16, cy + 66, 0.2, t["dim"])
-        parts.append(mt)
-        scw = text_width(scale, INTER[600], 11, 0.6)
-        sc, _ = text_paths(scale, INTER[600], 11, cx + card_w - 16 - scw, cy + 24, 0.6, a)
-        parts.append(sc)
+    cw3 = (INNER - GUT * 2) / 3
+    for i, (name, desc, meta, scale) in enumerate(projects):
+        cx = PAD + i * (cw3 + GUT)
+        parts.append(card(cx, WORK_Y, cw3, WORK_H, t, r=16))
+        parts.append(text_paths(f"0{i+1}", INTER[600], 12, cx + 30, WORK_Y + 44, 1.2, a)[0])
+        scw = text_width(scale, INTER[600], 12, 0.4)
+        parts.append(text_paths(scale, INTER[600], 12, cx + cw3 - 30 - scw, WORK_Y + 44, 0.4, a)[0])
+        parts.append(text_paths(name, INTER[600], 19, cx + 30, WORK_Y + 94, -0.2, t["ink"])[0])
+        for j, line in enumerate(desc):
+            parts.append(text_paths(line, INTER[500], 14, cx + 30, WORK_Y + 126 + j * 22, 0.1, t["muted"])[0])
+        parts.append(text_paths(meta, INTER[500], 12, cx + 30, WORK_Y + WORK_H - 30, 0.3, t["dim"])[0])
 
     parts.append("</svg>")
     return "\n".join(parts)
