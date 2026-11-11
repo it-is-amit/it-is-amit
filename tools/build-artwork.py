@@ -45,10 +45,12 @@ BRAND = {
     "github": "#EDEDED", "gmail": "#EA4335", "firebase": "#FFCA28",
     "mongodb": "#47A248", "postgresql": "#4169E1", "git": "#F05032",
     "postman": "#FF6C37", "vercel": "#EDEDED", "netlify": "#00C7B7",
+    "instagram": "#FF0069", "linkedin": "#0A66C2",
 }
 # light theme needs darker variants for the near-white brand marks
 BRAND_LIGHT = dict(BRAND, nextdotjs="#111111", github="#111111", vercel="#111111",
-                   javascript="#C9A227", tanstack="#D92B38", framer="#0055FF")
+                   javascript="#C9A227", tanstack="#D92B38", framer="#0055FF",
+                   instagram="#C21E5B", linkedin="#0A66C2")
 
 THEMES = {
     "dark": dict(
@@ -242,7 +244,7 @@ def hero(theme):
 
     # role in accent
     parts.append(text_paths("SENIOR FRONTEND DEVELOPER", INTER[700], 21, P, role_y, 4.4, a)[0])
-    stack_y = role_y + 30
+    stack_y = role_y + 40
 
     # stack line with real brand icons
     stack = [("react", "React"), ("nextdotjs", "Next.js"), ("typescript", "TypeScript")]
@@ -257,24 +259,24 @@ def hero(theme):
 
     parts.append(text_paths("5 years building product UIs for 5K–50K users", INTER[500], 15, P, stack_y + 36, 0.2, t["muted"])[0])
 
-    # contact pills
-    pills = [("github", "GitHub", "it-is-amit"), ("linkedin", "LinkedIn", "amit-verma"),
+    # contact pills: icon + handle, real brand marks
+    pills = [("github", "GitHub", "it-is-amit"),
+             ("linkedin", "LinkedIn", "amit-verma"),
+             ("instagram", "Instagram", "it_is_amit"),
              ("gmail", "Email", "amverma1204t")]
-    px = P
-    py = HERO_H - 36
+    px, py = P, HERO_H - 36
     for slug, lbl, handle in pills:
-        tw = text_width(f"{lbl}", INTER[600], 13, 0.3) + text_width(handle, INTER[500], 13, 0) + 54
-        parts.append(f'<rect x="{px:.1f}" y="{py - 15}" width="{tw:.1f}" height="30" rx="15" '
+        label_w = text_width(lbl, INTER[600], 13, 0.3)
+        handle_w = text_width(handle, INTER[500], 13, 0)
+        pw = 14 + 17 + 8 + label_w + 6 + handle_w + 14
+        parts.append(f'<rect x="{px:.1f}" y="{py - 15}" width="{pw:.1f}" height="30" rx="15" '
                      f'fill="{t["chip"]}" stroke="{t["stroke"]}" stroke-width="1"/>')
-        col = t["brand"].get(slug if slug != "linkedin" else "github", t["ink2"])
-        if slug == "linkedin":
-            col = "#0A66C2" if theme == "light" else "#4A9EFF"
-        parts.append(icon(slug, px + 14, py - 9, 17, col))
+        parts.append(icon(slug, px + 14, py - 9, 17, t["brand"][slug]))
         m, w = text_paths(lbl, INTER[600], 13, px + 39, py + 5, 0.3, t["ink"])
         parts.append(m)
-        m2, w2 = text_paths(handle, INTER[500], 13, px + 39 + w + 6, py + 5, 0, t["dim"])
+        m2, _ = text_paths(handle, INTER[500], 13, px + 39 + w + 6, py + 5, 0, t["dim"])
         parts.append(m2)
-        px += tw + 10
+        px += pw + 9
 
     parts.append(f'<rect x="0" y="{HERO_H - 2}" width="{HERO_W}" height="2" fill="url(#fade-{uid})"/>')
     parts.append("</svg>")
@@ -296,9 +298,8 @@ def label(text, x, y, t, color=None, size=13, track=3.0):
     return text_paths(text, INTER[600], size, x, y, track, color or t["dim"])[0]
 
 
-def tech_tile(slug, lbl, x, y, t):
+def tech_tile(slug, lbl, x, y, t, w=132, h=60):
     """Icon tile: brand mark + label, both large enough to actually read."""
-    w, h = 132, 60
     parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="14" fill="{t["chip"]}" '
              f'stroke="{t["stroke"]}" stroke-width="1"/>']
     parts.append(icon(slug, x + 14, y + 14, 24, t["brand"][slug]))
@@ -314,9 +315,9 @@ def bento(theme):
     P = 0
 
     # --- geometry
-    TOP_Y = 42
-    STACK_H = 190
-    WORK_Y = TOP_Y + STACK_H + 62
+    TOP_Y = 46
+    STACK_H = 204
+    WORK_Y = TOP_Y + STACK_H + 68
     WORK_H = 268
     H = WORK_Y + WORK_H + PAD
 
@@ -325,25 +326,31 @@ def bento(theme):
     parts.append(f'<rect width="{BENTO_W}" height="{H}" fill="{t["bg"]}"/>')
 
     # ------------------------------------------------ 01 stack
-    parts.append(label("01 — STACK", PAD, TOP_Y - 16, t))
+    parts.append(label("01 · STACK", PAD, TOP_Y - 16, t))
     parts.append(card(PAD, TOP_Y, INNER, STACK_H, t))
 
     tiles = [("react", "React.js"), ("nextdotjs", "Next.js"), ("typescript", "TypeScript"),
              ("javascript", "JavaScript"), ("tailwindcss", "Tailwind"), ("tanstack", "TanStack"),
              ("redux", "Redux"), ("framer", "Framer"), ("figma", "Figma"),
              ("postgresql", "PostgreSQL"), ("mongodb", "MongoDB"), ("firebase", "Firebase")]
-    tw, th, gap = 132, 60, 12.8
-    grid_w = 6 * tw + 5 * gap  # 792 + 64 = 856 <= 880
-    gx0 = PAD + (INNER - grid_w) / 2
+    COLS, ROWS = 6, 2
+    gap = 12
+    # derive tile width from the card so the grid is inset evenly on all sides
+    inner_pad = 26
+    tw = (INNER - inner_pad * 2 - gap * (COLS - 1)) / COLS
+    th = 60
+    gx0 = PAD + inner_pad
+    grid_h = ROWS * th + (ROWS - 1) * gap
+    top_pad = (STACK_H - grid_h) / 2          # equal padding top and bottom
     for i, (slug, lbl) in enumerate(tiles):
-        r, c = divmod(i, 6)
+        r, c = divmod(i, COLS)
         x = gx0 + c * (tw + gap)
-        y = TOP_Y + 24 + r * (th + 12)
-        markup, _, _ = tech_tile(slug, lbl, x, y, t)
+        y = TOP_Y + top_pad + r * (th + gap)
+        markup, _, _ = tech_tile(slug, lbl, x, y, t, w=tw, h=th)
         parts.append(markup)
 
     # ------------------------------------------------ 02 selected work
-    parts.append(label("02 — SELECTED WORK", PAD, WORK_Y - 18, t))
+    parts.append(label("02 · SELECTED WORK", PAD, WORK_Y - 18, t))
     note = "CLIENT PROJECTS · NAMES WITHHELD"
     nw = text_width(note, INTER[600], 12, 2.4)
     parts.append(label(note, BENTO_W - PAD - nw, WORK_Y - 18, t, size=12, track=2.4))
