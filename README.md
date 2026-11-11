@@ -1,15 +1,15 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.svg">
-  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.svg" alt="Amit Verma — senior frontend developer and UI/UX designer. React, Next.js, TypeScript, five years." width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.png" alt="Amit Verma — senior frontend developer and UI/UX designer. React, Next.js, TypeScript, five years." width="100%">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.svg">
-  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.svg" alt="Tech stack and three selected client projects, from 30K to 50K users." width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.png" alt="Tech stack and three selected client projects, from 30K to 50K users." width="100%">
 </picture>
 
 <br/>
