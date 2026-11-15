@@ -2,22 +2,31 @@
 """
 Build the GitHub profile artwork as hand-authored SVG with text converted to outlines.
 
-Two constraints drive every decision here:
+Three constraints drive every decision here:
 
-1. FONTS. GitHub's image proxy strips external resources, so a webfont <link> never
-   loads and the type silently falls back to a system font. Converting glyphs to
-   <path> outlines makes the typography render identically everywhere.
+1. FONTS. GitHub's image proxy strips external resources, so a webfont never loads
+   and the type silently falls back to a system font. Glyphs are converted to
+   <path> outlines so typography renders identically everywhere.
 
-2. SIZE. GitHub renders README images at roughly 860-900px in the content column,
-   so a 1160px canvas shrinks every font by ~25% and small text becomes unreadable.
-   All artwork is therefore authored at 880px. Matching the render width exactly also
-   avoids fractional resampling, which is what smears thin text strokes into mush.
+2. SIZE. GitHub renders README images at roughly 860 to 900px, so artwork is
+   authored at 880px. Matching the render width avoids fractional resampling,
+   which is what smears thin text strokes.
+
+3. SURVIVABILITY. GitHub's proxy rasterises SVG at a resolution it chooses, and
+   some browser/display-scaling combinations get that wrong and blur it. The
+   build therefore also emits 2x PNGs, and the README references those.
+
+Palette: cool indigo and glacier blue on near-black, with a violet secondary.
+No orange. Gradients stay inside one temperature family so nothing clashes.
 
 Outputs (dark + light variants):
-  assets/hero-{dark,light}.svg    name, role, accent, contact pills
-  assets/bento-{dark,light}.svg   stack + selected work
+  assets/hero-{dark,light}    glass header: wordmark, role, stack, availability
+  assets/bento-{dark,light}   tech stack grid plus client work
+  assets/social-{dark,light}  bento cards for GitHub, LinkedIn, Portfolio,
+                              Instagram and Email
+  plus 2x PNG for each
 
-Motion is SMIL <animate> only. No JS, no third-party services, no external images.
+Motion is SMIL <animate> only. No JS, no third party services, no external images.
 """
 import gzip
 import pathlib
@@ -35,7 +44,7 @@ OUT = ROOT / "assets"
 OUT.mkdir(exist_ok=True)
 
 ANTON = FONTS / "anton-latin-400-normal.ttf"
-INTER = {w: FONTS / f"inter-latin-{w}-normal.ttf" for w in (500, 600, 700)}
+INTER = {w: FONTS / f"inter-latin-{w}-normal.ttf" for w in (500, 600, 700, 800)}
 
 # ---------------------------------------------------------------- brand colours
 BRAND = {
@@ -45,23 +54,41 @@ BRAND = {
     "github": "#EDEDED", "gmail": "#EA4335", "firebase": "#FFCA28",
     "mongodb": "#47A248", "postgresql": "#4169E1", "git": "#F05032",
     "postman": "#FF6C37", "vercel": "#EDEDED", "netlify": "#00C7B7",
-    "instagram": "#FF0069", "linkedin": "#0A66C2",
+    "instagram": "#FF4D8D", "linkedin": "#4C9AFF", "python": "#3776AB",
+    "bootstrap": "#8B6BE0", "adobexd": "#FF61F6", "photoshop": "#31A8FF",
+    "premiere": "#9999FF",
 }
-# light theme needs darker variants for the near-white brand marks
-BRAND_LIGHT = dict(BRAND, nextdotjs="#111111", github="#111111", vercel="#111111",
-                   javascript="#C9A227", tanstack="#D92B38", framer="#0055FF",
-                   instagram="#C21E5B", linkedin="#0A66C2")
+BRAND_LIGHT = dict(
+    BRAND, nextdotjs="#111111", github="#111111", vercel="#111111",
+    javascript="#B58A00", tanstack="#D92B38", framer="#0055FF",
+    instagram="#D6246E", nextdotjs_light="#111111",
+)
 
+# Cool, cohesive palette. One family: indigo to glacier, violet as support.
 THEMES = {
     "dark": dict(
-        bg="#0A0C10", tile="#12151C", chip="#1A1F28", stroke="#252B36",
-        ink="#F4F6F9", ink2="#D3DAE3", muted="#9BA5B1", dim="#68727E",
-        accent="#FF6A2B", accent2="#FFB067", brand=BRAND,
+        bg="#0A0B14",
+        tile="#12141F",          # solid base under frosted tiles
+        glass="#141726",         # frosted fill
+        chip="#181B29",
+        stroke="#252A3D",
+        ink="#F3F5FA", ink2="#D2D8E6", muted="#98A1B8", dim="#6B7488",
+        accent="#7C8CFF",        # indigo
+        accent2="#4FD1FF",       # glacier
+        violet="#A78BFA",
+        brand=BRAND,
+        blob1="#4C56D6", blob2="#2AA6D8", blob3="#8B5CF6",
+        blob_op=0.55,
     ),
     "light": dict(
-        bg="#FAF7F3", tile="#FFFFFF", chip="#F5F0E9", stroke="#E5DED4",
-        ink="#0E1116", ink2="#33302B", muted="#635E56", dim="#8A8378",
-        accent="#E8502A", accent2="#FF9A4D", brand=BRAND_LIGHT,
+        bg="#F7F8FC",
+        tile="#FFFFFF", glass="#FFFFFF", chip="#F1F3FA",
+        stroke="#E2E6F0",
+        ink="#0D1020", ink2="#333A4D", muted="#5C6478", dim="#8A90A3",
+        accent="#4F5BD5", accent2="#1B9AD6", violet="#7C5CE0",
+        brand=BRAND_LIGHT,
+        blob1="#B9C2FF", blob2="#A8E4FA", blob3="#D5C7FF",
+        blob_op=0.85,
     ),
 }
 
@@ -80,10 +107,8 @@ def _font(path):
 def _round_path(d: str, nd: int = 2) -> str:
     """Trim coordinate precision without destroying curve data.
 
-    nd=0 looks like a harmless size win, but type at 14-21px has curves finer
-    than one pixel: rounding control points to whole units collapses thousands
-    of curves into flat segments and the glyphs render visibly smudged. Two
-    decimals costs ~40 KB gzipped and keeps the outlines intact.
+    nd=0 collapses sub-pixel curve control points and visibly smudges glyphs at
+    these sizes; two decimals keeps the outlines intact for a modest size cost.
     """
     def fmt(m):
         v = round(float(m.group()), nd)
@@ -116,45 +141,12 @@ def text_paths(text, path, size, x, y, track=0.0, fill="currentColor"):
             continue
         gs[name].draw(TransformPen(pen, (sc, 0, 0, -sc, x + dx, y)))
         dx += hmtx[name][0] * sc + track
-    return f'<g fill="{fill}"><path d="{_round_path(pen.getCommands())}"/></g>', text_width(text, path, size, track)
-
-
-def text_bbox(text, path, size, track=0.0):
-    """True ink bounds of a text run at the origin, in the same order as text_paths."""
-    from fontTools.pens.boundsPen import BoundsPen
-
-    tt, gs = _font(path)
-    sc = size / tt["head"].unitsPerEm
-    cmap, hmtx = tt.getBestCmap(), tt["hmtx"]
-    bp = BoundsPen(gs)
-    dx = 0.0
-    for ch in text:
-        name = cmap.get(ord(ch))
-        if name is None:
-            dx += size * 0.28 + track
-            continue
-        gs[name].draw(TransformPen(bp, (sc, 0, 0, -sc, dx, 0)))
-        dx += hmtx[name][0] * sc + track
-    return bp.bounds  # (xMin, yMin, xMax, yMax) with y already flipped
-
-
-def text_at_top(text, path, size, x, top, track=0.0, fill="currentColor"):
-    """Place display type so the top of its ink lands exactly on `top`.
-
-    Returns (markup, ink_bottom) so callers can flow the next element beneath the
-    real outline bounds instead of guessing at a baseline offset.
-    """
-    b = text_bbox(text, path, size, track)
-    # y is flipped, so ink top is yMin (negative offset above baseline) and the
-    # ink bottom is yMax
-    baseline = top - b[1] if b else top + size
-    markup, _ = text_paths(text, path, size, x, baseline, track, fill)
-    ink_bottom = baseline + (b[3] if b else size)
-    return markup, ink_bottom
+    return (f'<g fill="{fill}"><path d="{_round_path(pen.getCommands())}"/></g>',
+            text_width(text, path, size, track))
 
 
 def wrap(text, path, size, max_w, track=0.0):
-    """Greedy word wrap against measured width — no manual line breaks to get wrong."""
+    """Greedy word wrap against measured width, so no string can overrun its box."""
     lines, line = [], ""
     for word in text.split():
         trial = f"{line} {word}".strip()
@@ -168,198 +160,306 @@ def wrap(text, path, size, max_w, track=0.0):
     return lines
 
 
-def fit(text, path, target_w, track=0.0, start=200):
-    size = start
-    while size > 6 and text_width(text, path, size, track * size) > target_w:
-        size -= 1
-    return size
+def text_bbox(text, path, size, track=0.0):
+    from fontTools.pens.boundsPen import BoundsPen
+    tt, gs = _font(path)
+    sc = size / tt["head"].unitsPerEm
+    cmap, hmtx = tt.getBestCmap(), tt["hmtx"]
+    bp = BoundsPen(gs)
+    dx = 0.0
+    for ch in text:
+        name = cmap.get(ord(ch))
+        if name is None:
+            dx += size * 0.28 + track
+            continue
+        gs[name].draw(TransformPen(bp, (sc, 0, 0, -sc, dx, 0)))
+        dx += hmtx[name][0] * sc + track
+    return bp.bounds
+
+
+def text_at_top(text, path, size, x, top, track=0.0, fill="currentColor"):
+    """Place display type so the top of its ink lands exactly on `top`."""
+    b = text_bbox(text, path, size, track)
+    baseline = top - b[1] if b else top + size
+    markup, _ = text_paths(text, path, size, x, baseline, track, fill)
+    return markup, baseline + (b[3] if b else size)
 
 
 # ---------------------------------------------------------------- icons
 _icon_cache: dict = {}
 
 
-def icon(slug, x, y, size, color):
+def icon(slug, x, y, size, color, opacity=1.0):
     """Simple Icons glyph (24x24) as a filled path at (x, y)."""
     if slug not in _icon_cache:
         root = ET.parse(ICONS / f"{slug}.svg").getroot()
-        path = root.find("{http://www.w3.org/2000/svg}path")
-        _icon_cache[slug] = path.get("d")
+        _icon_cache[slug] = root.find("{http://www.w3.org/2000/svg}path").get("d")
     s = size / 24.0
-    return (f'<g transform="translate({x:.1f} {y:.1f}) scale({s:.4f})">'
+    op = f' opacity="{opacity}"' if opacity != 1 else ""
+    return (f'<g transform="translate({x:.1f} {y:.1f}) scale({s:.4f})"{op}>'
             f'<path d="{_icon_cache[slug]}" fill="{color}"/></g>')
 
 
+def adobe_icon(app, x, y, size, bg, fg="#FFFFFF"):
+    """The three Adobe marks are no longer in Simple Icons, so draw them here
+    as the two-letter app tile Adobe actually uses."""
+    letters = {"adobexd": "Xd", "photoshop": "Ps", "premiere": "Pr"}[app]
+    r = size * 0.22
+    parts = [f'<rect x="{x:.1f}" y="{y:.1f}" width="{size}" height="{size}" rx="{r:.1f}" fill="{bg}"/>']
+    fs = size * 0.42 if app != "adobexd" else size * 0.40
+    tw = text_width(letters, INTER[700], fs, -0.2)
+    m, _ = text_paths(letters, INTER[700], fs, x + (size - tw) / 2, y + size * 0.69, -0.2, fg)
+    parts.append(m)
+    return "".join(parts)
+
+
+def any_icon(slug, x, y, size, color, t):
+    if slug in ("adobexd", "photoshop", "premiere"):
+        return adobe_icon(slug, x, y, size, t["brand"][slug])
+    return icon(slug, x, y, size, color)
+
+
+# ---------------------------------------------------------------- chrome
 def defs(t, uid):
-    a = t["accent"]
     dark = uid.startswith("d")
     return f"""  <defs>
     <linearGradient id="ac-{uid}" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="{a}"/><stop offset="1" stop-color="{t['accent2']}"/>
+      <stop offset="0" stop-color="{t['accent']}"/><stop offset="1" stop-color="{t['accent2']}"/>
     </linearGradient>
-    <radialGradient id="glow-{uid}" cx="0.82" cy="0.0" r="0.9">
-      <stop offset="0" stop-color="{a}" stop-opacity="{0.38 if dark else 0.20}"/>
-      <stop offset="0.45" stop-color="{a}" stop-opacity="{0.09 if dark else 0.05}"/>
-      <stop offset="1" stop-color="{a}" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="glow2-{uid}" cx="0.06" cy="1.0" r="0.7">
-      <stop offset="0" stop-color="#7C5CFF" stop-opacity="{0.20 if dark else 0.10}"/>
-      <stop offset="1" stop-color="#7C5CFF" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="fade-{uid}" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="{a}" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="{a}" stop-opacity="0.6"/>
-      <stop offset="1" stop-color="{a}" stop-opacity="0"/>
+    <linearGradient id="hair-{uid}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="{t['accent']}" stop-opacity="0"/>
+      <stop offset="0.25" stop-color="{t['accent']}" stop-opacity="{0.55 if dark else 0.4}"/>
+      <stop offset="0.75" stop-color="{t['accent2']}" stop-opacity="{0.55 if dark else 0.4}"/>
+      <stop offset="1" stop-color="{t['accent2']}" stop-opacity="0"/>
     </linearGradient>
+    <radialGradient id="b1-{uid}" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="{t['blob1']}" stop-opacity="{t['blob_op']}"/>
+      <stop offset="0.6" stop-color="{t['blob1']}" stop-opacity="{t['blob_op'] * 0.28:.2f}"/>
+      <stop offset="1" stop-color="{t['blob1']}" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b2-{uid}" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="{t['blob2']}" stop-opacity="{t['blob_op'] * 0.85:.2f}"/>
+      <stop offset="0.6" stop-color="{t['blob2']}" stop-opacity="{t['blob_op'] * 0.2:.2f}"/>
+      <stop offset="1" stop-color="{t['blob2']}" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b3-{uid}" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="{t['blob3']}" stop-opacity="{t['blob_op'] * 0.7:.2f}"/>
+      <stop offset="0.65" stop-color="{t['blob3']}" stop-opacity="{t['blob_op'] * 0.15:.2f}"/>
+      <stop offset="1" stop-color="{t['blob3']}" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glass-{uid}" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="{t['glass']}" stop-opacity="{0.92 if dark else 1}"/>
+      <stop offset="1" stop-color="{t['glass']}" stop-opacity="{0.72 if dark else 1}"/>
+    </linearGradient>
+    <linearGradient id="edge-{uid}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="{t['ink']}" stop-opacity="{0.16 if dark else 0.7}"/>
+      <stop offset="0.5" stop-color="{t['stroke']}" stop-opacity="{0.5 if dark else 0.5}"/>
+      <stop offset="1" stop-color="{t['ink']}" stop-opacity="{0.05 if dark else 0.4}"/>
+    </linearGradient>
+    <filter id="blur-{uid}" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
   </defs>"""
 
 
+def blobs(t, uid, w, h, spec):
+    """Blurred gradient blobs. Ambient, slow drift, never flashing."""
+    out = []
+    for i, (cx, cy, rx, ry, grad, dur) in enumerate(spec):
+        out.append(
+            f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="url(#{grad}-{uid})">'
+            f'<animate attributeName="cy" values="{cy};{cy + 8};{cy}" dur="{dur}s" repeatCount="indefinite"/>'
+            f'</ellipse>'
+        )
+    return "".join(out)
+
+
+def glass_card(x, y, w, h, t, uid, r=20, tint=None):
+    """Frosted tile: gradient fill, soft top highlight, hairline edge."""
+    fill = tint or f"url(#glass-{uid})"
+    return (
+        f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{r}" fill="{fill}"/>'
+        f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{r}" fill="none" '
+        f'stroke="url(#edge-{uid})" stroke-width="1.1"/>'
+    )
+
+
 # ================================================================ HERO
-HERO_W, HERO_H = 880, 348
+HERO_W, HERO_H = 880, 356
 
 
 def hero(theme):
     t = THEMES[theme]
     uid = "d" if theme == "dark" else "l"
-    a = t["accent"]
-    P = 48
+    P = 44
 
-    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {HERO_W} {HERO_H}" width="{HERO_W}" height="{HERO_H}" role="img" aria-label="Amit Verma, senior frontend developer and UI/UX designer. React, Next.js, TypeScript. Five years.">']
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {HERO_W} {HERO_H}" width="{HERO_W}" height="{HERO_H}" role="img" aria-label="Amit Verma, senior frontend developer and UI/UX designer. React, Next.js, TypeScript.">']
     parts.append(defs(t, uid))
     parts.append(f'<rect width="{HERO_W}" height="{HERO_H}" fill="{t["bg"]}"/>')
-    parts.append(f'<rect width="{HERO_W}" height="{HERO_H}" fill="url(#glow-{uid})"/>')
-    parts.append(f'<rect width="{HERO_W}" height="{HERO_H}" fill="url(#glow2-{uid})"/>')
+    parts.append(blobs(t, uid, HERO_W, HERO_H, [
+        (112, 300, 300, 210, "b1", 21),
+        (700, 40, 300, 180, "b2", 26),
+        (452, 160, 250, 150, "b3", 31),
+    ]))
 
-    # eyebrow with a live dot
-    eb = "FRONTEND DEVELOPER  ·  UI/UX DESIGNER"
-    parts.append(text_paths(eb, INTER[600], 13, P + 16, 36, 3.2, t["muted"])[0])
-    parts.append(f'<circle cx="{P + 2}" cy="32" r="5" fill="{a}">'
-                 f'<animate attributeName="opacity" values="1;0.2;1" dur="2.4s" repeatCount="indefinite"/></circle>')
+    # faint grid, adds the SaaS blueprint feel without noise
+    grid = "".join(
+        f'<line x1="{gx}" y1="0" x2="{gx}" y2="{HERO_H}" stroke="{t["stroke"]}" stroke-opacity="0.28"/>'
+        for gx in range(0, HERO_W, 44)
+    )
+    parts.append(grid)
 
-    # name — bigger than before, tight tracking
-    name_size = fit("AMIT VERMA", ANTON, 700, 0.01, start=118)
-    nm, name_bottom = text_at_top("AMIT VERMA", ANTON, name_size, P - 2, 58, 0.01 * name_size, t["ink"])
+    # ---------------------------------------------- glass header panel
+    hx, hy, hw, hh = P, 26, HERO_W - P * 2, HERO_H - 50
+    parts.append(glass_card(hx, hy, hw, hh, t, uid, r=24))
+    # top sheen
+    parts.append(f'<rect x="{hx + 1}" y="{hy + 1}" width="{hw - 2}" height="1.4" fill="url(#ac-{uid})" opacity="0.75"/>')
+
+    ix = hx + 38
+
+    # availability chip
+    chip_txt = "AVAILABLE FOR SENIOR ROLES"
+    ct_w = text_width(chip_txt, INTER[700], 10.5, 2.3)
+    parts.append(f'<rect x="{ix}" y="{hy + 26}" width="{ct_w + 42:.1f}" height="24" rx="12" '
+                 f'fill="{t["accent"]}" fill-opacity="0.14" stroke="{t["accent"]}" stroke-opacity="0.45" stroke-width="1"/>')
+    parts.append(f'<circle cx="{ix + 14}" cy="{hy + 38}" r="3.6" fill="{t["accent2"]}">'
+                 f'<animate attributeName="opacity" values="1;0.25;1" dur="2.6s" repeatCount="indefinite"/></circle>')
+    parts.append(text_paths(chip_txt, INTER[700], 10.5, ix + 26, hy + 42, 2.3, t["ink2"])[0])
+
+    # wordmark
+    name_size = 96
+    nm, name_bottom = text_at_top("AMIT VERMA", ANTON, name_size, ix, hy + 66, 1.2, t["ink"])
     parts.append(nm)
-    role_y = name_bottom + 34
 
-    # role in accent
-    parts.append(text_paths("SENIOR FRONTEND DEVELOPER", INTER[700], 21, P, role_y, 4.4, a)[0])
-    stack_y = role_y + 40
+    # role line, accent gradient text via a rect mask-free approach: two tone words
+    role_y = name_bottom + 26
+    parts.append(text_paths("SENIOR FRONTEND DEVELOPER", INTER[700], 15, ix, role_y, 4.2, t["accent"])[0])
+    sep = text_width("SENIOR FRONTEND DEVELOPER", INTER[700], 15, 4.2)
+    parts.append(f'<circle cx="{ix + sep + 9}" cy="{role_y - 5}" r="2.6" fill="{t["dim"]}"/>')
+    parts.append(text_paths("UI/UX DESIGNER", INTER[700], 15, ix + sep + 20, role_y, 4.2, t["accent2"])[0])
 
-    # stack line with real brand icons
-    stack = [("react", "React"), ("nextdotjs", "Next.js"), ("typescript", "TypeScript")]
-    x = P
-    for slug, lbl in stack:
-        parts.append(icon(slug, x, stack_y - 17, 21, t["brand"][slug]))
-        m, w = text_paths(lbl, INTER[600], 16, x + 29, stack_y, 0.2, t["ink2"])
+    # stack row with icons
+    sy = role_y + 34
+    x = ix
+    for slug, lbl in (("react", "React"), ("nextdotjs", "Next.js"), ("typescript", "TypeScript")):
+        parts.append(icon(slug, x, sy - 16, 19, t["brand"][slug]))
+        m, w = text_paths(lbl, INTER[600], 14.5, x + 26, sy, 0.2, t["ink2"])
         parts.append(m)
-        x += 28 + w + 26
-        if slug != stack[-1][0]:
-            parts.append(f'<circle cx="{x - 14:.1f}" cy="{stack_y - 7}" r="2" fill="{t["dim"]}"/>')
+        x += 26 + w + 22
 
-    parts.append(text_paths("5 years building product UIs for 5K–50K users", INTER[500], 15, P, stack_y + 36, 0.2, t["muted"])[0])
+    # ---------------------------------------------- contact pill + meta right side
+    meta_x = hx + hw - 34
+    yrs = "05"
+    ysz = 62
+    yw = text_width(yrs, ANTON, ysz, 1)
+    parts.append(text_paths(yrs, ANTON, ysz, meta_x - yw, hy + 96, 1, t["accent"])[0])
+    lab = "YEARS SHIPPING"
+    lw = text_width(lab, INTER[700], 10, 2.4)
+    parts.append(text_paths(lab, INTER[700], 10, meta_x - lw, hy + 114, 2.4, t["dim"])[0])
 
-    # contact pills: icon + handle, real brand marks
-    pills = [("github", "GitHub", "it-is-amit"),
-             ("linkedin", "LinkedIn", "amit-verma"),
-             ("instagram", "Instagram", "it_is_amit"),
-             ("gmail", "Email", "amverma1204t")]
-    px, py = P, HERO_H - 36
-    for slug, lbl, handle in pills:
-        label_w = text_width(lbl, INTER[600], 13, 0.3)
-        handle_w = text_width(handle, INTER[500], 13, 0)
-        pw = 14 + 17 + 8 + label_w + 6 + handle_w + 14
-        parts.append(f'<rect x="{px:.1f}" y="{py - 15}" width="{pw:.1f}" height="30" rx="15" '
-                     f'fill="{t["chip"]}" stroke="{t["stroke"]}" stroke-width="1"/>')
-        parts.append(icon(slug, px + 14, py - 9, 17, t["brand"][slug]))
-        m, w = text_paths(lbl, INTER[600], 13, px + 39, py + 5, 0.3, t["ink"])
-        parts.append(m)
-        m2, _ = text_paths(handle, INTER[500], 13, px + 39 + w + 6, py + 5, 0, t["dim"])
-        parts.append(m2)
-        px += pw + 9
+    handle = "@it-is-amit"
+    hw2 = text_width(handle, INTER[600], 12, 0.6)
+    parts.append(text_paths(handle, INTER[600], 12, meta_x - hw2, hy + 148, 0.6, t["muted"])[0])
 
-    parts.append(f'<rect x="0" y="{HERO_H - 2}" width="{HERO_W}" height="2" fill="url(#fade-{uid})"/>')
     parts.append("</svg>")
     return "\n".join(parts)
 
 
 # ================================================================ BENTO
-PAD, GUT = 10, 14
+PAD = 12
 BENTO_W = 880
 INNER = BENTO_W - PAD * 2
 
 
-def card(x, y, w, h, t, r=18, fill=None):
-    return (f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{r}" '
-            f'fill="{fill or t["tile"]}" stroke="{t["stroke"]}" stroke-width="1.25"/>')
+def label(text, x, y, t, color=None, size=12, track=2.8):
+    return text_paths(text, INTER[700], size, x, y, track, color or t["dim"])[0]
 
 
-def label(text, x, y, t, color=None, size=13, track=3.0):
-    return text_paths(text, INTER[600], size, x, y, track, color or t["dim"])[0]
-
-
-def tech_tile(slug, lbl, x, y, t, w=132, h=60):
-    """Icon tile: brand mark + label, both large enough to actually read."""
-    parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="14" fill="{t["chip"]}" '
-             f'stroke="{t["stroke"]}" stroke-width="1"/>']
-    parts.append(icon(slug, x + 14, y + 14, 24, t["brand"][slug]))
-    m, _ = text_paths(lbl, INTER[600], 15, x + 14, y + 52, 0.1, t["ink2"])
-    parts.append(m)
-    return "".join(parts), w, h
+def tech_tile(slug, lbl, x, y, t, uid, w, h):
+    """Frosted tile: brand mark above a readable label."""
+    parts = [
+        f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="14" fill="{t["chip"]}"/>',
+        f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="14" fill="none" '
+        f'stroke="url(#edge-{uid})" stroke-width="1"/>',
+    ]
+    isize = min(24, w * 0.2)
+    parts.append(any_icon(slug, x + 14, y + 12, isize, t["brand"][slug], t))
+    parts.append(text_paths(lbl, INTER[600], 13, x + 14, y + h - 13, 0.1, t["ink2"])[0])
+    return "".join(parts)
 
 
 def bento(theme):
     t = THEMES[theme]
     uid = "d" if theme == "dark" else "l"
     a = t["accent"]
-    P = 0
 
-    # --- geometry
-    TOP_Y = 46
-    STACK_H = 204
-    WORK_Y = TOP_Y + STACK_H + 68
-    WORK_H = 268
+    COLS, ROWS = 8, 3
+    gap = 10
+    ipad = 22
+    tw = (INNER - ipad * 2 - gap * (COLS - 1)) / COLS
+    th = 64
+    grid_h = ROWS * th + (ROWS - 1) * gap
+    STACK_H = grid_h + ipad * 2
+
+    TOP_Y = 40
+    WORK_Y = TOP_Y + STACK_H + 62
+    WORK_H = 262
     H = WORK_Y + WORK_H + PAD
 
-    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {BENTO_W} {H}" width="{BENTO_W}" height="{H}" role="img" aria-label="Tech stack and three selected client projects for Amit Verma.">']
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {BENTO_W} {H}" width="{BENTO_W}" height="{H}" role="img" aria-label="Tech stack and three selected client projects.">']
     parts.append(defs(t, uid))
     parts.append(f'<rect width="{BENTO_W}" height="{H}" fill="{t["bg"]}"/>')
+    parts.append(blobs(t, uid, BENTO_W, H, [
+        (60, 120, 260, 200, "b1", 24),
+        (830, 380, 240, 220, "b2", 29),
+    ]))
 
-    # ------------------------------------------------ 01 stack
-    parts.append(label("01 · STACK", PAD, TOP_Y - 16, t))
-    parts.append(card(PAD, TOP_Y, INNER, STACK_H, t))
+    # ---------------------------------------------- 01 stack
+    parts.append(label("01  STACK", PAD, TOP_Y - 14, t))
+    parts.append(glass_card(PAD, TOP_Y, INNER, STACK_H, t, uid, r=22))
 
-    tiles = [("react", "React.js"), ("nextdotjs", "Next.js"), ("typescript", "TypeScript"),
-             ("javascript", "JavaScript"), ("tailwindcss", "Tailwind"), ("tanstack", "TanStack"),
-             ("redux", "Redux"), ("framer", "Framer"), ("figma", "Figma"),
-             ("postgresql", "PostgreSQL"), ("mongodb", "MongoDB"), ("firebase", "Firebase")]
-    COLS, ROWS = 6, 2
-    gap = 12
-    # derive tile width from the card so the grid is inset evenly on all sides
-    inner_pad = 26
-    tw = (INNER - inner_pad * 2 - gap * (COLS - 1)) / COLS
-    th = 60
-    gx0 = PAD + inner_pad
-    grid_h = ROWS * th + (ROWS - 1) * gap
-    top_pad = (STACK_H - grid_h) / 2          # equal padding top and bottom
-    for i, (slug, lbl) in enumerate(tiles):
+    tiles = [
+        ("react", "React.js"), ("nextdotjs", "Next.js"), ("typescript", "TypeScript"),
+        ("javascript", "JavaScript"), ("tailwindcss", "Tailwind"), ("bootstrap", "Bootstrap"),
+        ("redux", "Redux"), ("tanstack", "TanStack"),
+        ("framer", "Framer"), ("figma", "Figma"), ("adobexd", "Adobe XD"),
+        ("photoshop", "Photoshop"),
+        ("python", "Python"), ("postgresql", "PostgreSQL"), ("mongodb", "MongoDB"),
+        ("firebase", "Firebase"),
+        ("premiere", "Premiere Pro"), ("postman", "Postman"), ("github", "GitHub"),
+        ("vercel", "Vercel"), ("git", "Git"), ("netlify", "Netlify"),
+        ("postman", "Postman"), ("vercel", "Vercel"),
+    ]
+    # 8 x 3 = 24 slots; trim the accidental duplicates to exactly fill the grid
+    tiles = tiles[:16] + [("premiere", "Premiere Pro"), ("postman", "Postman"),
+                          ("github", "GitHub"), ("vercel", "Vercel"),
+                          ("git", "Git"), ("netlify", "Netlify"),
+                          ("figma", "Figma"), ("python", "Python")]
+    seen, final = set(), []
+    for slug, lbl in tiles:
+        if lbl in seen:
+            continue
+        seen.add(lbl)
+        final.append((slug, lbl))
+    tiles = final
+
+    for i, (slug, lbl) in enumerate(tiles[:COLS * ROWS]):
         r, c = divmod(i, COLS)
-        x = gx0 + c * (tw + gap)
-        y = TOP_Y + top_pad + r * (th + gap)
-        markup, _, _ = tech_tile(slug, lbl, x, y, t, w=tw, h=th)
-        parts.append(markup)
+        x = PAD + ipad + c * (tw + gap)
+        y = TOP_Y + ipad + r * (th + gap)
+        parts.append(tech_tile(slug, lbl, x, y, t, uid, tw, th))
 
-    # ------------------------------------------------ 02 selected work
-    parts.append(label("02 · SELECTED WORK", PAD, WORK_Y - 18, t))
-    note = "CLIENT PROJECTS · NAMES WITHHELD"
-    nw = text_width(note, INTER[600], 12, 2.4)
-    parts.append(label(note, BENTO_W - PAD - nw, WORK_Y - 18, t, size=12, track=2.4))
+    # ---------------------------------------------- 02 selected work
+    parts.append(label("02  SELECTED WORK", PAD, WORK_Y - 16, t))
+    note = "CLIENT PROJECTS, NAMES WITHHELD"
+    nw = text_width(note, INTER[700], 10.5, 2.2)
+    parts.append(label(note, BENTO_W - PAD - nw, WORK_Y - 16, t, size=10.5, track=2.2))
 
     projects = [
         ("Fleet management dashboard",
          "Live vehicle status, reporting and role-based access across 45+ screens.",
          "50K users", ["tanstack", "typescript", "firebase"]),
-        ("School site + admin panel",
+        ("School site and admin panel",
          "Public site plus a CMS for exams, results, admissions and achievements.",
          "30K users", ["nextdotjs", "typescript"]),
         ("Industrial monitoring platform",
@@ -367,43 +467,121 @@ def bento(theme):
          "In production", ["react", "postgresql"]),
     ]
 
-    cw = (INNER - GUT * 2) / 3
+    cw = (INNER - gap * 2) / 3
     for i, (name, desc, scale, stack) in enumerate(projects):
-        cx = PAD + i * (cw + GUT)
-        parts.append(card(cx, WORK_Y, cw, WORK_H, t, r=18))
+        cx = PAD + i * (cw + gap)
+        parts.append(glass_card(cx, WORK_Y, cw, WORK_H, t, uid, r=20))
 
-        # scale badge — accent filled, top right
-        bw = text_width(scale, INTER[700], 12, 0.4) + 22
-        parts.append(f'<rect x="{cx + cw - 20 - bw:.1f}" y="{WORK_Y + 20}" width="{bw:.1f}" height="24" rx="12" '
-                     f'fill="{a}" fill-opacity="0.16" stroke="{a}" stroke-opacity="0.5" stroke-width="1"/>')
-        parts.append(label(scale, cx + cw - 20 - bw + 11, WORK_Y + 36, t, color=a, size=12, track=0.4))
+        bw = text_width(scale, INTER[700], 10.5, 0.5) + 20
+        parts.append(f'<rect x="{cx + cw - 18 - bw:.1f}" y="{WORK_Y + 18}" width="{bw:.1f}" height="22" rx="11" '
+                     f'fill="{a}" fill-opacity="0.16" stroke="{a}" stroke-opacity="0.45" stroke-width="1"/>')
+        parts.append(text_paths(scale, INTER[700], 10.5, cx + cw - 18 - bw + 10, WORK_Y + 33, 0.5, a)[0])
 
-        parts.append(text_paths(f"0{i+1}", INTER[600], 12, cx + 20, WORK_Y + 37, 1.2, t["dim"])[0])
+        parts.append(text_paths(f"0{i+1}", INTER[700], 11, cx + 18, WORK_Y + 34, 1.1, t["dim"])[0])
 
-        lines = wrap(name, INTER[600], 21, cw - 40, -0.2)
+        lines = wrap(name, INTER[600], 19, cw - 36, -0.2)
         for j, ln in enumerate(lines):
-            parts.append(text_paths(ln, INTER[600], 21, cx + 20, WORK_Y + 84 + j * 26, -0.2, t["ink"])[0])
+            parts.append(text_paths(ln, INTER[600], 19, cx + 18, WORK_Y + 78 + j * 24, -0.2, t["ink"])[0])
 
-        dy = WORK_Y + 84 + len(lines) * 26 + 16
-        for j, ln in enumerate(wrap(desc, INTER[500], 15, cw - 40, 0.1)):
-            parts.append(text_paths(ln, INTER[500], 15, cx + 20, dy + j * 23, 0.1, t["muted"])[0])
+        dy = WORK_Y + 78 + len(lines) * 24 + 16
+        for j, ln in enumerate(wrap(desc, INTER[500], 13.5, cw - 36, 0.1)):
+            parts.append(text_paths(ln, INTER[500], 13.5, cx + 18, dy + j * 20, 0.1, t["muted"])[0])
 
-        # mini stack icons along the bottom
-        ix = cx + 20
+        ix = cx + 18
         for slug in stack:
-            parts.append(icon(slug, ix, WORK_Y + WORK_H - 40, 22, t["brand"][slug]))
-            ix += 32
+            parts.append(icon(slug, ix, WORK_Y + WORK_H - 36, 19, t["brand"][slug]))
+            ix += 27
+
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+# ================================================================ SOCIAL
+SOCIAL_W = 880
+SOCIAL_H = 220
+
+
+def social(theme):
+    """Bento cards: 2 wide on the top row, 3 on the bottom."""
+    t = THEMES[theme]
+    uid = "d" if theme == "dark" else "l"
+    P = 12
+    gap = 12
+    inner = SOCIAL_W - P * 2
+
+    items = [
+        ("github", "GitHub", "it-is-amit", "github.com/it-is-amit"),
+        ("linkedin", "LinkedIn", "amit-verma", "in/amit-verma"),
+        ("link", "Portfolio", "coming soon", "amitverma.dev"),
+        ("instagram", "Instagram", "it_is_amit", "instagram.com/it_is_amit"),
+        ("gmail", "Email", "amverma1204t", "gmail.com"),
+    ]
+
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {SOCIAL_W} {SOCIAL_H}" width="{SOCIAL_W}" height="{SOCIAL_H}" role="img" aria-label="Contact cards for GitHub, LinkedIn, Portfolio, Instagram and Email.">']
+    parts.append(defs(t, uid))
+    parts.append(f'<rect width="{SOCIAL_W}" height="{SOCIAL_H}" fill="{t["bg"]}"/>')
+    parts.append(blobs(t, uid, SOCIAL_W, SOCIAL_H, [
+        (150, 40, 240, 150, "b1", 23),
+        (740, 200, 240, 160, "b3", 27),
+    ]))
+
+    top_h, top_y = 100, 8
+    bot_y, bot_h = top_y + top_h + gap, 100
+    top_w = (inner - gap) / 2
+    bot_w = (inner - gap * 2) / 3
+
+    for i, (slug, name, handle, url) in enumerate(items):
+        if i < 2:
+            x, y, w, h = P + i * (top_w + gap), top_y, top_w, top_h
+        else:
+            j = i - 2
+            x, y, w, h = P + j * (bot_w + gap), bot_y, bot_w, bot_h
+
+        parts.append(glass_card(x, y, w, h, t, uid, r=18))
+
+        # icon tile
+        isz = 34 if i < 2 else 28
+        bx, by = x + 18, y + 18
+        parts.append(f'<rect x="{bx}" y="{by}" width="{isz}" height="{isz}" rx="10" '
+                     f'fill="{t["brand"][slug] if slug != "link" else t["accent2"]}" fill-opacity="0.14" '
+                     f'stroke="url(#edge-{uid})" stroke-width="1"/>')
+        if slug == "link":
+            # a clean chain-link glyph, there is no Simple Icons mark for "portfolio"
+            cx, cy = bx + isz / 2, by + isz / 2
+            parts.append(f'<g stroke="{t["accent2"]}" stroke-width="2" stroke-linecap="round" fill="none">'
+                         f'<path d="M{cx - 6.5} {cy + 1} a5 5 0 0 1 0 -7 l3.2 -3.2"/>'
+                         f'<path d="M{cx + 6.5} {cy - 1} a5 5 0 0 1 0 7 l-3.2 3.2"/>'
+                         f'<path d="M{cx - 4} {cy + 4} l8 -8"/></g>')
+        else:
+            parts.append(icon(slug, bx + (isz - isz * 0.56) / 2, by + (isz - isz * 0.56) / 2,
+                              isz * 0.56, t["brand"][slug]))
+
+        # label + handle
+        size_name = 15 if i < 2 else 13.5
+        parts.append(text_paths(name, INTER[700], size_name, bx + isz + 12, by + 15, 0.2, t["ink"])[0])
+        parts.append(text_paths(handle, INTER[500], 12 if i < 2 else 11,
+                                bx + isz + 12, by + 31, 0.1, t["muted"])[0])
+
+        # url strip on the wide cards
+        if i < 2:
+            parts.append(text_paths(url, INTER[500], 11.5, x + 18, y + h - 18, 0.1, t["dim"])[0])
+            ar_x = x + w - 30
+            parts.append(f'<path d="M{ar_x} {y + h - 24} l7 6 l-7 6" stroke="{t["accent"]}" '
+                         f'stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>')
 
     parts.append("</svg>")
     return "\n".join(parts)
 
 
 if __name__ == "__main__":
+    import resvg_py
+
     for theme in THEMES:
-        for name, builder in (("hero", hero), ("bento", bento)):
+        for name, builder in (("hero", hero), ("bento", bento), ("social", social)):
             markup = builder(theme)
-            path = OUT / f"{name}-{theme}.svg"
-            path.write_text(markup, encoding="utf-8")
             ET.fromstring(markup)  # fail loudly on malformed SVG
-            gz = len(gzip.compress(markup.encode(), 9))
-            print(f"{path.name:18} {path.stat().st_size // 1024:4} KB raw · {gz // 1024:4} KB gzip")
+            svg_path = OUT / f"{name}-{theme}.svg"
+            svg_path.write_text(markup, encoding="utf-8")
+            png = bytes(resvg_py.svg_to_bytes(svg_string=markup, zoom=2))
+            (OUT / f"{name}-{theme}.png").write_bytes(png)
+            print(f"{name}-{theme}: svg {len(markup) // 1024:3} KB · png {len(png) // 1024:3} KB")

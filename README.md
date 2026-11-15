@@ -3,16 +3,30 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.png">
-  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.png" alt="Amit Verma, senior frontend developer and UI/UX designer. React, Next.js, TypeScript, five years." width="100%">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.png" alt="Amit Verma, senior frontend developer and UI/UX designer. React, Next.js, TypeScript." width="100%">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.png">
-  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.png" alt="Tech stack and three selected client projects, from 30K to 50K users." width="100%">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.png" alt="Tech stack and three selected client projects." width="100%">
 </picture>
 
-<br/>
+</div>
+
+## I build interfaces that are designed, not just coded.
+
+Five years in frontend, four of them in **React, Next.js and TypeScript**. I started out as a UI/UX designer, so hierarchy, motion and the pixel still lead every decision, and I care just as much about the component architecture underneath.
+
+## Find me
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-light.png" alt="Contact cards for GitHub, LinkedIn, Portfolio, Instagram and Email." width="100%">
+</picture>
 
 [![GitHub](https://img.shields.io/badge/GitHub-it--is--amit-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/it-is-amit)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Amit_Verma-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/amit-verma-2a46971b4/)
@@ -20,10 +34,6 @@
 [![Email](https://img.shields.io/badge/Email-amverma1204t%40gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:amverma1204t@gmail.com)
 
 </div>
-
-## I build interfaces that are designed, not just coded.
-
-Five years in frontend, four of them in **React, Next.js and TypeScript**. I started out as a UI/UX designer, so hierarchy, motion and the pixel still lead every decision, and I care just as much about the component architecture underneath.
 
 ## Experience
 
@@ -62,8 +72,8 @@ Beyond the three above, I have built and shipped frontends for:
 
 <div align="center">
 
-[![Say hello](https://img.shields.io/badge/Say_hello-E8502A?style=for-the-badge&logo=minutemailer&logoColor=white)](mailto:amverma1204t@gmail.com)
+[![Say hello](https://img.shields.io/badge/Say_hello-4F5BD5?style=for-the-badge&logo=minutemailer&logoColor=white)](mailto:amverma1204t@gmail.com)
 [![Connect on LinkedIn](https://img.shields.io/badge/Connect_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/amit-verma-2a46971b4/)
-[![Instagram](https://img.shields.io/badge/Follow_on_Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/it_is_amit)
+[![Follow on Instagram](https://img.shields.io/badge/Follow_on_Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/it_is_amit)
 
 </div>
