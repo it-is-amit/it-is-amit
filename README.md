@@ -30,9 +30,9 @@ Five years in frontend, four of them in **React, Next.js and TypeScript**. I sta
 
 <div align="center">
 
-<table>
+<table width="100%">
 <tr>
-<td width="50%">
+<td width="50%" align="center">
 <a href="https://github.com/it-is-amit">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-github-dark.png">
@@ -41,7 +41,7 @@ Five years in frontend, four of them in **React, Next.js and TypeScript**. I sta
 </picture>
 </a>
 </td>
-<td width="50%">
+<td width="50%" align="center">
 <a href="https://www.linkedin.com/in/amit-verma-2a46971b4/">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-linkedin-dark.png">
@@ -52,7 +52,7 @@ Five years in frontend, four of them in **React, Next.js and TypeScript**. I sta
 </td>
 </tr>
 <tr>
-<td width="33%">
+<td width="50%" align="center">
 <a href="https://portfolio-itisamit.vercel.app/">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-link-dark.png">
@@ -61,7 +61,7 @@ Five years in frontend, four of them in **React, Next.js and TypeScript**. I sta
 </picture>
 </a>
 </td>
-<td width="33%">
+<td width="50%" align="center">
 <a href="https://www.instagram.com/it_is_amit">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-instagram-dark.png">
@@ -70,7 +70,9 @@ Five years in frontend, four of them in **React, Next.js and TypeScript**. I sta
 </picture>
 </a>
 </td>
-<td width="33%">
+</tr>
+<tr>
+<td colspan="2" align="center">
 <a href="mailto:amverma1204t@gmail.com">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-gmail-dark.png">
