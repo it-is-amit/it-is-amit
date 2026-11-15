@@ -6,34 +6,85 @@
   <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/hero-light.png" alt="Amit Verma, senior frontend developer and UI/UX designer. React, Next.js, TypeScript." width="100%">
 </picture>
 
+</div>
+
+<br/>
+<br/>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.png">
   <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/bento-light.png" alt="Tech stack and three selected client projects." width="100%">
 </picture>
 
-</div>
+<br/>
+<br/>
 
 ## I build interfaces that are designed, not just coded.
 
 Five years in frontend, four of them in **React, Next.js and TypeScript**. I started out as a UI/UX designer, so hierarchy, motion and the pixel still lead every decision, and I care just as much about the component architecture underneath.
 
+<br/>
+
 ## Find me
 
 <div align="center">
 
+<table>
+<tr>
+<td width="50%">
+<a href="https://github.com/it-is-amit">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-light.png">
-  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-light.png" alt="Contact cards for GitHub, LinkedIn, Portfolio, Instagram and Email." width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-github-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-github-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-github-light.png" alt="GitHub, it-is-amit" width="100%">
 </picture>
-
-[![GitHub](https://img.shields.io/badge/GitHub-it--is--amit-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/it-is-amit)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Amit_Verma-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/amit-verma-2a46971b4/)
-[![Instagram](https://img.shields.io/badge/Instagram-it__is__amit-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/it_is_amit)
-[![Email](https://img.shields.io/badge/Email-amverma1204t%40gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:amverma1204t@gmail.com)
+</a>
+</td>
+<td width="50%">
+<a href="https://www.linkedin.com/in/amit-verma-2a46971b4/">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-linkedin-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-linkedin-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-linkedin-light.png" alt="LinkedIn, amit-verma" width="100%">
+</picture>
+</a>
+</td>
+</tr>
+<tr>
+<td width="33%">
+<a href="https://portfolio-itisamit.vercel.app/">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-link-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-link-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-link-light.png" alt="Portfolio, portfolio-itisamit.vercel.app" width="100%">
+</picture>
+</a>
+</td>
+<td width="33%">
+<a href="https://www.instagram.com/it_is_amit">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-instagram-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-instagram-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-instagram-light.png" alt="Instagram, it_is_amit" width="100%">
+</picture>
+</a>
+</td>
+<td width="33%">
+<a href="mailto:amverma1204t@gmail.com">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-gmail-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-gmail-light.png">
+  <img src="https://raw.githubusercontent.com/it-is-amit/it-is-amit/main/assets/social-gmail-light.png" alt="Email, amverma1204t@gmail.com" width="100%">
+</picture>
+</a>
+</td>
+</tr>
+</table>
 
 </div>
+
+<br/>
 
 ## Experience
 
@@ -42,6 +93,9 @@ Five years in frontend, four of them in **React, Next.js and TypeScript**. I sta
 | **Frontend Developer** | Kriscent Techno Hub, Kota | Jul 2024 to Present |
 | **Frontend Developer** | Vysion Technology, Jodhpur / Kota | May 2022 to May 2024 |
 | **UI/UX Designer** | Vysion Technology, Kota | Jun 2021 to Apr 2022 |
+| **UI/UX Design Intern** | Safal Infotech Pvt. Ltd., Kota | Jan 2021 to May 2021 |
+
+<br/>
 
 ## More Projects
 
@@ -53,6 +107,8 @@ Beyond the three above, I have built and shipped frontends for:
 - **AI astrology platform** · UI/UX overhaul for astrologers plus the frontend
 - **AttachClub admin dashboard** · admin panel and user profile platform
 - **Company website rebuild** · static site generation for a cPanel host, including SEO and performance work
+
+<br/>
 
 ## Contributions
 
@@ -66,6 +122,8 @@ Beyond the three above, I have built and shipped frontends for:
 
 </div>
 
+<br/>
+
 ## Open to
 
 **Senior Frontend, React and Next.js** roles at product companies, in India or remote. I like teams where frontend owns real surface area, not just tickets.
@@ -73,7 +131,5 @@ Beyond the three above, I have built and shipped frontends for:
 <div align="center">
 
 [![Say hello](https://img.shields.io/badge/Say_hello-4F5BD5?style=for-the-badge&logo=minutemailer&logoColor=white)](mailto:amverma1204t@gmail.com)
-[![Connect on LinkedIn](https://img.shields.io/badge/Connect_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/amit-verma-2a46971b4/)
-[![Follow on Instagram](https://img.shields.io/badge/Follow_on_Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/it_is_amit)
 
 </div>
