@@ -291,45 +291,39 @@ HERO_W, HERO_H = 880, 356
 def hero(theme):
     t = THEMES[theme]
     uid = "d" if theme == "dark" else "l"
-    P = 44
+    P = 12
+    ix_off = 40
 
-    # Content first, panel height derived from it. Previously the panel height was
-    # a guess and left ~70px of empty space under the stack row.
-    ix_off = 38
-    chip_y = 26
-    name_top = 66
+    # --- vertical rhythm, measured not guessed
+    chip_y = 26                       # chip top, panel relative
+    name_top = 66                     # wordmark ink top, panel relative
     name_size = 96
-
-    # measure once at origin to learn the wordmark's ink height, then lay out
-    _, name_bottom_probe = text_at_top("AMIT VERMA", ANTON, name_size, 0, 0, 1.2, "#000")
-    ink_h = name_bottom_probe                      # ink bottom relative to top
-    role_rel = name_top + ink_h + 26                # role baseline, panel relative
-    stack_rel = role_rel + 34                       # stack baseline, panel relative
-    panel_h = stack_rel + 26                        # 26px of air under the stack row
-    hero_h = panel_h + 52
+    _, ink_h = text_at_top("AMIT VERMA", ANTON, name_size, 0, 0, 1.2, "#000")
+    role_rel = name_top + ink_h + 26  # role baseline
+    stack_rel = role_rel + 34         # stack baseline
+    stack_bottom = stack_rel + 5      # icons extend a few px below the baseline
+    panel_h = stack_bottom + 24       # equal-ish air under the last element
+    canvas_pad = 32                   # keep every edge clear so nothing clips
+    hero_h = panel_h + canvas_pad * 2
 
     parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {HERO_W} {hero_h}" width="{HERO_W}" height="{hero_h}" role="img" aria-label="Amit Verma, senior frontend developer and UI/UX designer. React, Next.js, TypeScript, five years.">']
     parts.append(defs(t, uid))
     parts.append(f'<rect width="{HERO_W}" height="{hero_h}" fill="{t["bg"]}"/>')
     parts.append(blobs(t, uid, HERO_W, hero_h, [
-        (112, hero_h - 60, 300, 200, "b1", 21),
-        (700, 30, 300, 180, "b2", 26),
-        (452, hero_h * 0.5, 250, 150, "b3", 31),
+        (90, hero_h - 70, 280, 190, "b1", 21),
+        (720, 46, 280, 170, "b2", 26),
+        (430, hero_h * 0.55, 240, 140, "b3", 31),
     ]))
-
-    # faint grid, keeps the blueprint feel without adding noise
     parts.append("".join(
-        f'<line x1="{gx}" y1="0" x2="{gx}" y2="{hero_h}" stroke="{t["stroke"]}" stroke-opacity="0.28"/>'
-        for gx in range(0, HERO_W, 44)
+        f'<line x1="{gx}" y1="{canvas_pad}" x2="{gx}" y2="{hero_h - canvas_pad}" stroke="{t["stroke"]}" stroke-opacity="0.22"/>'
+        for gx in range(44, HERO_W, 44)
     ))
 
-    # ---------------------------------------------- glass header panel
-    hx, hy, hw, hh = P, 26, HERO_W - P * 2, panel_h
+    hx, hy, hw, hh = P, canvas_pad, HERO_W - P * 2, panel_h
     parts.append(glass_card(hx, hy, hw, hh, t, uid, r=24))
 
     ix = hx + ix_off
 
-    # availability chip
     chip_txt = "AVAILABLE FOR SENIOR ROLES"
     ct_w = text_width(chip_txt, INTER[700], 10.5, 2.3)
     parts.append(f'<rect x="{ix}" y="{hy + chip_y}" width="{ct_w + 42:.1f}" height="24" rx="12" '
@@ -338,18 +332,15 @@ def hero(theme):
                  f'<animate attributeName="opacity" values="1;0.25;1" dur="2.6s" repeatCount="indefinite"/></circle>')
     parts.append(text_paths(chip_txt, INTER[700], 10.5, ix + 26, hy + chip_y + 16, 2.3, t["ink2"])[0])
 
-    # wordmark
     nm, _ = text_at_top("AMIT VERMA", ANTON, name_size, ix, hy + name_top, 1.2, t["ink"])
     parts.append(nm)
 
-    # role line: two tones, separated by a dot
     role_y = hy + role_rel
     parts.append(text_paths("SENIOR FRONTEND DEVELOPER", INTER[700], 15, ix, role_y, 4.2, t["accent"])[0])
     sep = text_width("SENIOR FRONTEND DEVELOPER", INTER[700], 15, 4.2)
     parts.append(f'<circle cx="{ix + sep + 9}" cy="{role_y - 5}" r="2.6" fill="{t["dim"]}"/>')
     parts.append(text_paths("UI/UX DESIGNER", INTER[700], 15, ix + sep + 20, role_y, 4.2, t["accent2"])[0])
 
-    # stack row
     sy = hy + stack_rel
     x = ix
     for slug, lbl in (("react", "React"), ("nextdotjs", "Next.js"), ("typescript", "TypeScript")):
@@ -358,17 +349,16 @@ def hero(theme):
         parts.append(m)
         x += 26 + w + 22
 
-    # right side meta
     meta_x = hx + hw - 38
     ysz = 62
     yw = text_width("05", ANTON, ysz, 1)
-    parts.append(text_paths("05", ANTON, ysz, meta_x - yw, hy + 40 + ysz * 0.72, 1, t["accent"])[0])
+    parts.append(text_paths("05", ANTON, ysz, meta_x - yw, hy + 34 + ysz * 0.73, 1, t["accent"])[0])
     lab = "YEARS SHIPPING"
     lw = text_width(lab, INTER[700], 10, 2.4)
-    parts.append(text_paths(lab, INTER[700], 10, meta_x - lw, hy + 40 + ysz * 0.72 + 18, 2.4, t["dim"])[0])
+    parts.append(text_paths(lab, INTER[700], 10, meta_x - lw, hy + 34 + ysz * 0.73 + 17, 2.4, t["dim"])[0])
     handle = "@it-is-amit"
     hw2 = text_width(handle, INTER[600], 12, 0.6)
-    parts.append(text_paths(handle, INTER[600], 12, meta_x - hw2, hy + hh - 30, 0.6, t["muted"])[0])
+    parts.append(text_paths(handle, INTER[600], 12, meta_x - hw2, hy + hh - 26, 0.6, t["muted"])[0])
 
     parts.append("</svg>")
     return "\n".join(parts)
@@ -508,16 +498,17 @@ def bento(theme):
 # ================================================================ SOCIAL CARDS
 # Each link is its own image so it can sit inside its own <a>. A single combined
 # image can never be clickable in more than one place.
-CARD_W, CARD_H = 424, 104     # wide card, two per row
+CARD_W, CARD_H = 424, 104
+WIDE_W = 864                    # the full-width slot, drawn at its real size     # wide card, two per row
 MINI_W, MINI_H = 277, 104     # mini card, three per row
 
 
-def social_card(theme, slug, name, handle, width=None, height=None, wide=True):
+def social_card(theme, slug, name, handle, full=False):
     """One contact card as a standalone image, ready to wrap in an anchor."""
     t = THEMES[theme]
     uid = "d" if theme == "dark" else "l"
-    W = width or (CARD_W if wide else MINI_W)
-    H = height or (CARD_H if wide else MINI_H)
+    W = WIDE_W if full else CARD_W
+    H = CARD_H
     ink = t["brand"].get(slug, t["accent2"])
     if slug == "link":
         ink = t["accent2"]
@@ -532,7 +523,7 @@ def social_card(theme, slug, name, handle, width=None, height=None, wide=True):
     parts.append(glass_card(6, 6, W - 12, H - 12, t, uid, r=18))
 
     # icon chip
-    isz = 34 if wide else 28
+    isz = 34
     bx, by = 22, 20
     parts.append(f'<rect x="{bx}" y="{by}" width="{isz}" height="{isz}" rx="10" fill="{ink}" fill-opacity="0.14" '
                  f'stroke="url(#edge-{uid})" stroke-width="1"/>')
@@ -547,16 +538,14 @@ def social_card(theme, slug, name, handle, width=None, height=None, wide=True):
                           isz * 0.56, ink))
 
     # name + handle
-    ns = 15.5 if wide else 14
+    ns = 15.5
     parts.append(text_paths(name, INTER[700], ns, bx + isz + 13, by + 15, 0.2, t["ink"])[0])
-    parts.append(text_paths(handle, INTER[500], 12.5 if wide else 11.5,
+    parts.append(text_paths(handle, INTER[500], 12.5,
                             bx + isz + 13, by + 32, 0.1, t["muted"])[0])
 
-    if wide:
-        parts.append(text_paths(name.lower(), INTER[500], 1, 0, 0, 0, "none")[0])
-        arrow_x = W - 34
-        parts.append(f'<path d="M{arrow_x} {H - 36} l7 6 l-7 6" stroke="{t["accent"]}" '
-                     f'stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>')
+    arrow_x = W - 34
+    parts.append(f'<path d="M{arrow_x} {H - 36} l7 6 l-7 6" stroke="{t["accent"]}" '
+                 f'stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>')
 
     parts.append("</svg>")
     return "\n".join(parts)
@@ -577,7 +566,8 @@ if __name__ == "__main__":
     for theme in THEMES:
         jobs = [("hero", hero(theme)), ("bento", bento(theme))]
         for slug, name, handle, url, wide in SOCIAL_LINKS:
-            jobs.append((f"social-{slug}", social_card(theme, slug, name, handle, wide=wide)))
+            jobs.append((f"social-{slug}", social_card(theme, slug, name, handle,
+                                                       full=(slug == "gmail"))))
 
         for name, markup in jobs:
             ET.fromstring(markup)  # fail loudly on malformed SVG
